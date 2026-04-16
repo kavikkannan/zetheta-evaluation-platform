@@ -34,3 +34,4 @@ export interface Score {
 }
 
 export type CandidateFunnelStatus = "applied" | "attempted" | "evaluated";
+export * from "./db";

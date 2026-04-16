@@ -1,21 +1,32 @@
 {
-    "name":  "zetheta-evaluation-platform",
-    "private":  true,
-    "packageManager":  "pnpm@9.12.0",
-    "scripts":  {
-                    "build":  "turbo run build",
-                    "dev":  "turbo run dev --parallel",
-                    "lint":  "turbo run lint",
-                    "test":  "turbo run test",
-                    "graph":  "turbo run build --graph=build-graph.html"
-                },
-    "devDependencies":  {
-                            "@types/node":  "^22.10.2",
-                            "eslint":  "^9.16.0",
-                            "prettier":  "^3.4.2",
-                            "tsup":  "^8.3.5",
-                            "tsx":  "^4.19.2",
-                            "turbo":  "^2.3.3",
-                            "typescript":  "^5.7.2"
-                        }
+  "name": "zetheta-evaluation-platform",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "graph": "turbo run build --graph=build-graph.html",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "prisma db seed",
+    "prisma:verify-indexes": "tsx prisma/verify-indexes.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.2",
+    "prisma": "^6.7.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.7.0"
+  }
 }
