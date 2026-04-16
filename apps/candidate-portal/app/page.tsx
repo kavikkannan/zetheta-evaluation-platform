@@ -1,4 +1,5 @@
 import { AppShell } from "@zetheta/ui";
+import { AuthPanel } from "./components/AuthPanel";
 
 export default function HomePage() {
   return (
@@ -6,7 +7,7 @@ export default function HomePage() {
       title="Candidate Portal"
       subtitle="Secure assessment entry point for candidates."
     >
-      <p>This app is initialized with shared frontend foundation and API envelope utilities.</p>
+      <AuthPanel />
     </AppShell>
   );
 }
