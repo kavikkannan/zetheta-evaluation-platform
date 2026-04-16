@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { MCQInterface } from "../components/MCQInterface";
-import { env } from "../../../lib/env";
+import { env } from "../../lib/env";
 
 export const dynamic = "force-dynamic";
 

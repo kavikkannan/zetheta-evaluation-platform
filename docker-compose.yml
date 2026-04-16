@@ -94,7 +94,7 @@ services:
     ports:
       - "${WEBSOCKET_SERVER_PORT:-3003}:3003"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     depends_on:
       redis:
@@ -152,9 +152,16 @@ services:
     build:
       context: .
       dockerfile: ./apps/employer-dashboard/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/v1}
+        NEXT_PUBLIC_WEBSOCKET_URL: ${NEXT_PUBLIC_WEBSOCKET_URL:-ws://localhost:3003}
     container_name: zetheta-employer-dashboard
     ports:
       - "${EMPLOYER_DASHBOARD_PORT:-4003}:4003"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/v1}
+      NEXT_PUBLIC_WEBSOCKET_URL: ${NEXT_PUBLIC_WEBSOCKET_URL:-ws://localhost:3003}
     depends_on:
       api-gateway:
         condition: service_started

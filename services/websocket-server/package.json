@@ -6,13 +6,23 @@
                     "build":  "tsc -p tsconfig.json",
                     "dev":  "tsx watch src/index.ts",
                     "lint":  "eslint src --max-warnings=0",
-                    "test":  "echo \"No tests yet\""
+                    "test":  "vitest run"
                 },
     "dependencies":  {
                          "@zetheta/shared-types":  "workspace:*",
-                         "@zetheta/utils":  "workspace:*"
+                         "@zetheta/utils":  "workspace:*",
+                         "ws": "^8.16.0",
+                         "ioredis": "^5.3.2",
+                         "zod": "^3.25.76",
+                         "pino": "^9.0.0"
                      },
     "devDependencies":  {
-                            "@zetheta/shared-config":  "workspace:*"
+                            "@zetheta/shared-config":  "workspace:*",
+                            "@types/ws": "^8.5.10",
+                            "@types/node": "^22.13.4",
+                            "tsx": "^4.7.1",
+                            "typescript": "^5.7.2",
+                            "vitest": "^3.1.2",
+                            "pino-pretty": "^11.0.0"
                         }
 }

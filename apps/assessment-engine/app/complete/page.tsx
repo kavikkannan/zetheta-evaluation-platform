@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { env } from "../../../lib/env";
+import { env } from "../../lib/env";
 
 export default function CompletePage() {
   return (
