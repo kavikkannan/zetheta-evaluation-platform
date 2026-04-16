@@ -9,11 +9,9 @@ export default async function DashboardPage() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("e_session")?.value;
 
-  // For this phase, if no session, we'll just mock it or provide a way to bypass
-  // In a real app we'd redirect to /login
-  // if (!sessionToken) {
-  //   redirect("/login");
-  // }
+  if (!sessionToken) {
+    redirect("/login");
+  }
 
   let initialCandidates = [];
   try {
@@ -34,7 +32,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 text-gray-100">
+    <main className="dashboard">
       <Dashboard initialCandidates={initialCandidates} />
     </main>
   );
