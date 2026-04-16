@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import Redis from "ioredis";
 import { verifyPassword } from "@zetheta/utils";
 import { parseWithSchema, ValidationException } from "@zetheta/utils";
@@ -30,6 +31,16 @@ export async function createApp(): Promise<FastifyInstance> {
     audience: config.JWT_AUDIENCE,
     sessionTtlSeconds: config.SESSION_TOKEN_TTL_SECONDS,
     crossAppTtlSeconds: config.CROSS_APP_TOKEN_TTL_SECONDS,
+  });
+
+  await app.register(cors, {
+    origin: [
+      "http://localhost:4001", // Candidate Portal
+      "http://localhost:4003", // Employer Dashboard
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   });
 
   app.addHook("onClose", async () => {

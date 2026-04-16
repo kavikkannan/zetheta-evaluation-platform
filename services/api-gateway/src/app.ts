@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import Redis from "ioredis";
 import { PrismaClient } from "@prisma/client";
 import { Queue } from "bullmq";
@@ -72,6 +73,17 @@ export async function createApp(): Promise<FastifyInstance> {
     },
     requestIdHeader: "x-request-id",
     genReqId: () => uuidv4(),
+  });
+
+  await app.register(cors, {
+    origin: [
+      "http://localhost:4001", // Candidate Portal
+      "http://localhost:4002", // Assessment Engine
+      "http://localhost:4003", // Employer Dashboard
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   });
 
   // Track metrics

@@ -19,14 +19,18 @@ export default async function DashboardPage() {
   try {
     const res = await apiRequest<{ candidates: any[] }>("/dashboard/candidates", {
       headers: { 
-        // We'll use a placeholder or the actual session token if present
-        Authorization: `Bearer ${sessionToken || "mock-employer-token"}` 
+        Authorization: `Bearer ${sessionToken || "no-session"}` 
       },
       cache: "no-store",
     });
+    
     initialCandidates = res.candidates;
-  } catch (err) {
-    console.error("Failed to fetch initial candidates:", err);
+  } catch (err: any) {
+    // Graceful handling of server-side fetch failure or 401
+    if (err?.status === 401) {
+      redirect("/login");
+    }
+    initialCandidates = [];
   }
 
   return (

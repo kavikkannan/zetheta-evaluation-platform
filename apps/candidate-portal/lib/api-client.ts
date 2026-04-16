@@ -42,7 +42,8 @@ export async function apiRequest<TData>(
   path: string,
   init?: RequestInit,
 ): Promise<TData> {
-  const response = await fetch(`${env.NEXT_PUBLIC_API_BASE_URL}${path}`, {
+  const baseUrl = env.API_BASE_URL || env.NEXT_PUBLIC_API_BASE_URL;
+  const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

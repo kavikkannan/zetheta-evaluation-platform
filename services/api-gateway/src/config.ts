@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const configSchema = z.object({
   PORT: z.coerce.number().default(3001),
+  HOST: z.string().default("0.0.0.0"),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
 

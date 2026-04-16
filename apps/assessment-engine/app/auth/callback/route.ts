@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import fs from "node:fs";
-import Redis from "ioredis";
+import { redis } from "../../../lib/redis";
 import { env } from "../../../lib/env";
 
 interface CrossAppClaims extends JwtPayload {
@@ -57,7 +57,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const redis = new Redis(env.REDIS_URL);
   try {
     const tokenKey = `token:${jti}`;
     const lua = `
@@ -77,13 +76,11 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (err) {
-    console.error("Redis connection failed:", err);
+    console.error("Redis operation failed:", err);
     return NextResponse.json(
       { error: "Validation service unavailable" },
       { status: 503 }
     );
-  } finally {
-    redis.disconnect();
   }
 
   // Token is verified and consumed! Create our local session.
@@ -97,7 +94,9 @@ export async function GET(request: NextRequest) {
   const sessionString = Buffer.from(JSON.stringify(sessionData)).toString("base64");
 
   // Redirect to assessment (we will fetch the active assessment internally)
-  const assessmentUrl = new URL("/assessment", request.url);
+  const host = request.headers.get("host") || "localhost:4002";
+  const protocol = request.headers.get("x-forwarded-proto") || "http";
+  const assessmentUrl = new URL("/assessment", `${protocol}://${host}`);
   
   const response = NextResponse.redirect(assessmentUrl, 302);
   response.cookies.set("ae_session", sessionString, {

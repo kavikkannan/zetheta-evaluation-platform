@@ -19,6 +19,7 @@
                         "jsonwebtoken":  "^9.0.2",
                         "uuid":  "^11.0.5",
                         "zod":  "^3.25.76",
+                        "@fastify/cors": "^10.0.1",
                         "pino": "^9.0.0",
                         "prom-client": "^15.1.0"
                      },

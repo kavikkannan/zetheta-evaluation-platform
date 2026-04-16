@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -114,20 +115,45 @@ async function main(): Promise<void> {
     ],
   });
 
-  await prisma.candidate.createMany({
-    data: [
-      {
+  const passwordHash = await bcrypt.hash("password123", 12);
+
+  const [c1, c2] = await Promise.all([
+    prisma.candidate.create({
+      data: {
         email: "candidate1@example.com",
-        passwordHash: "$2a$12$GQx5nYQxU0QxQxQxQxQxQe6m8JfBqQh9N8k3mQxQxQxQxQxQxQxQ2",
+        passwordHash,
         name: "Candidate One",
         roleId: candidateRole.id,
       },
-      {
+    }),
+    prisma.candidate.create({
+      data: {
         email: "candidate2@example.com",
-        passwordHash: "$2a$12$L5x5nYQxU0QxQxQxQxQxQe6m8JfBqQh9N8k3mQxQxQxQxQxQxQxQ3",
+        passwordHash,
         name: "Candidate Two",
         roleId: candidateRole.id,
       },
+    }),
+  ]);
+
+  await prisma.role.update({
+    where: { id: employerRole.id },
+    data: {
+      candidates: {
+        create: {
+          email: "employer@example.com",
+          passwordHash,
+          name: "Employer Admin",
+        },
+      },
+    },
+  });
+
+  // Create applications so candidates have something to see
+  await prisma.application.createMany({
+    data: [
+      { candidateId: c1.id, status: "applied" },
+      { candidateId: c2.id, status: "attempted" },
     ],
   });
 

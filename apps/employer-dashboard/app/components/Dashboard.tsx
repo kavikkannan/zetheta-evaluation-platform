@@ -77,7 +77,7 @@ export function Dashboard({ initialCandidates }: DashboardProps) {
           <p className="text-gray-400 mt-1">Real-time candidate evaluation overview</p>
         </div>
         <div className="flex items-center gap-3 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
-          <Activity className="w-4 h-4 text-indigo-400 animate-pulse" />
+          <Activity size={16} className="text-indigo-400 animate-pulse" />
           <span className="text-sm font-medium text-indigo-200">Live Updates Active</span>
         </div>
       </div>
@@ -85,19 +85,19 @@ export function Dashboard({ initialCandidates }: DashboardProps) {
       {/* Funnel Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard 
-          icon={<Users className="w-6 h-6 text-blue-400" />} 
+          icon={<Users size={24} className="text-blue-400" />} 
           label="Total Applied" 
           value={stats.applied} 
           color="blue"
         />
         <StatCard 
-          icon={<Clock className="w-6 h-6 text-amber-400" />} 
+          icon={<Clock size={24} className="text-amber-400" />} 
           label="Test Attempted" 
           value={stats.attempted} 
           color="amber"
         />
         <StatCard 
-          icon={<CheckCircle className="w-6 h-6 text-green-400" />} 
+          icon={<CheckCircle size={24} className="text-green-400" />} 
           label="Evaluated" 
           value={stats.evaluated} 
           color="green"
