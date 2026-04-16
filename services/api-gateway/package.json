@@ -18,12 +18,15 @@
                         "ioredis":  "^5.4.2",
                         "jsonwebtoken":  "^9.0.2",
                         "uuid":  "^11.0.5",
-                        "zod":  "^3.25.76"
+                        "zod":  "^3.25.76",
+                        "pino": "^9.0.0",
+                        "prom-client": "^15.1.0"
                      },
     "devDependencies":  {
                             "@types/jsonwebtoken":  "^9.0.8",
                             "@types/node":  "^22.13.4",
                             "@zetheta/shared-config":  "workspace:*",
-                            "vitest":  "^3.1.2"
+                            "vitest":  "^3.1.2",
+                            "pino-pretty": "^11.0.0"
                         }
 }

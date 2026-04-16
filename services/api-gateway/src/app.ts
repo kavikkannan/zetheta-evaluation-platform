@@ -21,7 +21,25 @@ import {
   submissionsRequestSchema,
 } from "./schemas";
 
+import { register, Counter, Histogram } from "prom-client";
+
 const serviceName = "@zetheta/api-gateway";
+
+// Register default metrics
+register.setDefaultLabels({ service: "api-gateway" });
+
+const httpRequestsTotal = new Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status"],
+});
+
+const httpRequestDurationSeconds = new Histogram({
+  name: "http_request_duration_seconds",
+  help: "Duration of HTTP requests in seconds",
+  labelNames: ["method", "route", "status"],
+  buckets: [0.1, 0.5, 1, 2, 5],
+});
 
 type AuthenticatedRequest = FastifyRequest & { user: UnifiedTokenPayload };
 
@@ -43,6 +61,32 @@ async function proxyJson(options: {
 
 export async function createApp(): Promise<FastifyInstance> {
   const config = loadConfig();
+  
+  const app = Fastify({
+    logger: {
+      level: "info",
+      transport: config.NODE_ENV === "development" ? {
+        target: "pino-pretty",
+        options: { colorize: true },
+      } : undefined,
+    },
+    requestIdHeader: "x-request-id",
+    genReqId: () => uuidv4(),
+  });
+
+  // Track metrics
+  app.addHook("onResponse", (request, reply, done) => {
+    const route = request.routeOptions.url || "unknown";
+    const labels = {
+      method: request.method,
+      route,
+      status: reply.statusCode,
+    };
+    httpRequestsTotal.inc(labels);
+    httpRequestDurationSeconds.observe(labels, reply.elapsedTime / 1000);
+    done();
+  });
+
   const prisma = new PrismaClient();
   const redis = new Redis(config.REDIS_URL);
   const tokenVerifier = new TokenVerifier({
@@ -53,16 +97,6 @@ export async function createApp(): Promise<FastifyInstance> {
   });
 
   const queue = new Queue(config.BULLMQ_QUEUE_NAME, { connection: redis });
-
-  const app = Fastify({
-    logger: { level: "info", base: { service: serviceName } },
-    genReqId: (req) => {
-      const raw = req.headers["x-request-id"];
-      if (typeof raw === "string" && raw.length > 0) return raw;
-      return uuidv4();
-    },
-    requestIdHeader: "x-request-id",
-  });
 
   app.decorate("evaluationQueue", queue);
 
@@ -193,6 +227,13 @@ export async function createApp(): Promise<FastifyInstance> {
     windowSeconds: config.RATE_LIMIT_WINDOW_SECONDS,
     keyPrefix: "rl:api-gateway:submissions",
     keyFn: (req) => String((req as unknown as Partial<AuthenticatedRequest>).user?.sub ?? "unknown"),
+  });
+
+  app.get("/health", async () => ({ status: "ok" }));
+
+  app.get("/metrics", async (request, reply) => {
+    reply.header("Content-Type", register.contentType);
+    return register.metrics();
   });
 
   app.post("/v1/auth/login", { preHandler: [authRateLimitPreHandler] }, async (request, reply) => {

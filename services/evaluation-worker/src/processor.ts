@@ -2,6 +2,20 @@ import { Job, UnrecoverableError } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import type Redis from "ioredis";
 import pino from "pino";
+import { Counter, Histogram } from "prom-client";
+
+const evaluationTotal = new Counter({
+  name: "evaluation_worker_jobs_total",
+  help: "Total number of evaluation jobs",
+  labelNames: ["status"],
+});
+
+const evaluationDuration = new Histogram({
+  name: "evaluation_worker_duration_seconds",
+  help: "Duration of evaluation jobs in seconds",
+  labelNames: ["status"],
+  buckets: [0.1, 0.5, 1, 2, 5],
+});
 
 const logger = pino({
   level: "info",
@@ -26,6 +40,7 @@ export class EvaluationProcessor {
 
   public async process(job: Job<EvaluationJobData>): Promise<{ scoreId?: string; duplicate?: boolean; score?: number }> {
     const { submissionId } = job.data;
+    const end = evaluationDuration.startTimer();
     
     logger.info({ submissionId, jobId: job.id }, "Processing evaluation job");
 
@@ -37,6 +52,8 @@ export class EvaluationProcessor {
 
       if (existingScore) {
         logger.info({ submissionId, scoreId: existingScore.id }, "Submission already evaluated. Skipping duplicate compute.");
+        evaluationTotal.inc({ status: "duplicate" });
+        end({ status: "duplicate" });
         return { scoreId: existingScore.id, duplicate: true, score: existingScore.score };
       }
 
@@ -100,14 +117,20 @@ export class EvaluationProcessor {
       await this.redisPubSub.publish("score:ready", JSON.stringify(eventPayload));
       logger.info({ submissionId, event: "score:ready" }, "Published score:ready event");
 
+      evaluationTotal.inc({ status: "success" });
+      end({ status: "success" });
       return { scoreId: scoreRecord.id, duplicate: false, score: scoreVal };
     } catch (error) {
       if (error instanceof UnrecoverableError) {
+        evaluationTotal.inc({ status: "unrecoverable" });
+        end({ status: "unrecoverable" });
         throw error;
       }
       
       // Transient Errors (timeouts, redis disconnects) should throw normal errors to trigger BullMQ retry
       logger.error({ submissionId, err: error }, "Transient error processing evaluation job");
+      evaluationTotal.inc({ status: "failure" });
+      end({ status: "failure" });
       throw error;
     }
   }

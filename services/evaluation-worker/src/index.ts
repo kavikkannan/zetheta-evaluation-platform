@@ -2,8 +2,13 @@ import { Worker } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import Redis from "ioredis";
 import pino from "pino";
+import Fastify from "fastify";
+import { register } from "prom-client";
 import { loadConfig } from "./config";
 import { EvaluationProcessor } from "./processor";
+
+// Register default metrics
+register.setDefaultLabels({ service: "evaluation-worker" });
 
 const logger = pino({
   level: "info",
@@ -53,11 +58,23 @@ async function main() {
     logger.error({ err }, "BullMQ Worker error");
   });
 
-  logger.info(`Worker ${config.WORKER_ID} listening on queue: ${config.BULLMQ_QUEUE_NAME}`);
+  // Metrics and Health server
+  const metricsApp = Fastify({ logger: false });
+  metricsApp.get("/health", async () => ({ status: "ok" }));
+  metricsApp.get("/metrics", async (request, reply) => {
+    reply.header("Content-Type", register.contentType);
+    return register.metrics();
+  });
+
+  metricsApp.listen({ port: 3010, host: "0.0.0.0" }, (err) => {
+    if (err) logger.error(err, "Failed to start metrics server");
+    else logger.info("Metrics server listening on port 3010");
+  });
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     logger.info({ signal }, "Graceful shutdown initiated...");
+    await metricsApp.close();
     await worker.close();
     await prisma.$disconnect();
     redisConnection.disconnect();
