@@ -6,13 +6,24 @@
                     "build":  "tsc -p tsconfig.json",
                     "dev":  "tsx watch src/index.ts",
                     "lint":  "eslint src --max-warnings=0",
-                    "test":  "echo \"No tests yet\""
+                    "test":  "vitest run",
+                    "test:watch":  "vitest"
                 },
     "dependencies":  {
+                        "@prisma/client":  "^6.19.3",
                          "@zetheta/shared-types":  "workspace:*",
-                         "@zetheta/utils":  "workspace:*"
+                        "@zetheta/utils":  "workspace:*",
+                        "bullmq":  "latest",
+                        "fastify":  "^5.2.0",
+                        "ioredis":  "^5.4.2",
+                        "jsonwebtoken":  "^9.0.2",
+                        "uuid":  "^11.0.5",
+                        "zod":  "^3.25.76"
                      },
     "devDependencies":  {
-                            "@zetheta/shared-config":  "workspace:*"
+                            "@types/jsonwebtoken":  "^9.0.8",
+                            "@types/node":  "^22.13.4",
+                            "@zetheta/shared-config":  "workspace:*",
+                            "vitest":  "^3.1.2"
                         }
 }

@@ -35,11 +35,16 @@ services:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key.pem}
+      JWT_ISSUER: ${JWT_ISSUER:-https://zetheta.com}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-assessment-engine}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+    volumes:
+      - ./secrets:/run/secrets:ro
 
   auth-service:
     build:
