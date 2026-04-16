@@ -1,0 +1,9 @@
+node_modules
+.pnpm-store
+.turbo
+dist
+coverage
+.next
+.env
+*.log
+build-graph.html

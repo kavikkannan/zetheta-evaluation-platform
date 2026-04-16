@@ -1,0 +1,128 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: zetheta-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-zetheta}
+      POSTGRES_USER: ${POSTGRES_USER:-zetheta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zetheta}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: zetheta-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+    container_name: zetheta-api-gateway
+    ports:
+      - "${API_GATEWAY_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    container_name: zetheta-auth-service
+    ports:
+      - "${AUTH_SERVICE_PORT:-3002}:3002"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/run/secrets/jwt_private_key}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key}
+      JWT_ISSUER: ${JWT_ISSUER:-https://zetheta.com}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-assessment-engine}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  evaluation-worker:
+    build:
+      context: ./services/evaluation-worker
+    container_name: zetheta-evaluation-worker
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  websocket-server:
+    build:
+      context: ./services/websocket-server
+    container_name: zetheta-websocket-server
+    ports:
+      - "${WEBSOCKET_SERVER_PORT:-3003}:3003"
+    environment:
+      NODE_ENV: development
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_started
+
+  candidate-portal:
+    build:
+      context: ./apps/candidate-portal
+    container_name: zetheta-candidate-portal
+    ports:
+      - "${CANDIDATE_PORTAL_PORT:-4001}:4001"
+    depends_on:
+      api-gateway:
+        condition: service_started
+      auth-service:
+        condition: service_started
+
+  assessment-engine:
+    build:
+      context: ./apps/assessment-engine
+    container_name: zetheta-assessment-engine
+    ports:
+      - "${ASSESSMENT_ENGINE_PORT:-4002}:4002"
+    depends_on:
+      api-gateway:
+        condition: service_started
+      auth-service:
+        condition: service_started
+
+  employer-dashboard:
+    build:
+      context: ./apps/employer-dashboard
+    container_name: zetheta-employer-dashboard
+    ports:
+      - "${EMPLOYER_DASHBOARD_PORT:-4003}:4003"
+    depends_on:
+      api-gateway:
+        condition: service_started
+      websocket-server:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:

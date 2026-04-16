@@ -1,0 +1,18 @@
+{
+    "name":  "@zetheta/shared-config",
+    "version":  "0.0.1",
+    "private":  true,
+    "exports":  {
+                    "./eslint/base":  "./eslint/base.cjs",
+                    "./prettier/base":  "./prettier/base.cjs",
+                    "./tsconfig/base.json":  "./tsconfig/base.json",
+                    "./tsconfig/node-lib.json":  "./tsconfig/node-lib.json",
+                    "./tsconfig/node-service.json":  "./tsconfig/node-service.json"
+                },
+    "scripts":  {
+                    "build":  "echo \"shared-config does not require build\"",
+                    "dev":  "echo \"shared-config does not require dev\"",
+                    "lint":  "echo \"shared-config lint is handled by consumers\"",
+                    "test":  "echo \"No tests yet for shared-config\""
+                }
+}

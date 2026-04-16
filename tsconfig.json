@@ -1,0 +1,3 @@
+{
+  "extends": "@zetheta/shared-config/tsconfig/base.json"
+}

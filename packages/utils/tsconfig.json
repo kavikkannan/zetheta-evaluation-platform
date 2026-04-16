@@ -1,0 +1,4 @@
+{
+  "extends": "@zetheta/shared-config/tsconfig/node-lib.json",
+  "include": ["src"]
+}
