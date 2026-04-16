@@ -52,7 +52,6 @@ export function LoginForm() {
   return (
     <div className="login-form-wrapper">
       <div className="login-card">
-        <div className="login-card__icon" aria-hidden="true">🔐</div>
         <h2 className="login-card__title">Welcome back</h2>
         <p className="login-card__subtitle">Sign in to access your assessment portal</p>
 
@@ -91,7 +90,6 @@ export function LoginForm() {
 
           {error ? (
             <div role="alert" className="form-error">
-              <span className="form-error__icon" aria-hidden="true">⚠️</span>
               {error}
             </div>
           ) : null}

@@ -4,16 +4,51 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
-  await prisma.score.deleteMany();
-  await prisma.response.deleteMany();
-  await prisma.submission.deleteMany();
-  await prisma.application.deleteMany();
-  await prisma.mcqQuestion.deleteMany();
-  await prisma.assessmentSession.deleteMany();
-  await prisma.candidate.deleteMany();
-  await prisma.rolePermission.deleteMany();
-  await prisma.permission.deleteMany();
-  await prisma.role.deleteMany();
+  console.log("Cleaning up database...");
+  try {
+    process.stdout.write("  - Deleting scores... ");
+    await prisma.score.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting responses... ");
+    await prisma.response.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting submissions... ");
+    await prisma.submission.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting applications... ");
+    await prisma.application.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting questions... ");
+    await prisma.mcqQuestion.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting assessment sessions... ");
+    await prisma.assessmentSession.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting candidates... ");
+    await prisma.candidate.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting role permissions... ");
+    await prisma.rolePermission.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting permissions... ");
+    await prisma.permission.deleteMany();
+    console.log("OK");
+
+    process.stdout.write("  - Deleting roles... ");
+    await prisma.role.deleteMany();
+    console.log("OK");
+  } catch (err) {
+    console.error("\nFailed during cleanup phase:");
+    throw err;
+  }
 
   const [candidateRole, employerRole, adminRole] = await Promise.all([
     prisma.role.create({ data: { name: "candidate" } }),
@@ -117,25 +152,53 @@ async function main(): Promise<void> {
 
   const passwordHash = await bcrypt.hash("password123", 12);
 
-  const [c1, c2] = await Promise.all([
-    prisma.candidate.create({
-      data: {
-        email: "candidate1@example.com",
-        passwordHash,
-        name: "Candidate One",
-        roleId: candidateRole.id,
-      },
-    }),
-    prisma.candidate.create({
-      data: {
-        email: "candidate2@example.com",
-        passwordHash,
-        name: "Candidate Two",
-        roleId: candidateRole.id,
-      },
-    }),
-  ]);
+  console.log("Creating candidates...");
+  const c1 = await prisma.candidate.create({
+    data: {
+      email: "candidate1@example.com",
+      passwordHash,
+      name: "Candidate One",
+      roleId: candidateRole.id,
+    },
+  });
 
+  const c2 = await prisma.candidate.create({
+    data: {
+      email: "candidate2@example.com",
+      passwordHash,
+      name: "Candidate Two",
+      roleId: candidateRole.id,
+    },
+  });
+
+  const c3 = await prisma.candidate.create({
+    data: {
+      email: "candidate3@example.com",
+      passwordHash,
+      name: "Candidate Three",
+      roleId: candidateRole.id,
+    },
+  });
+
+  const c4 = await prisma.candidate.create({
+    data: {
+      email: "candidate4@example.com",
+      passwordHash,
+      name: "Candidate Four",
+      roleId: candidateRole.id,
+    },
+  });
+
+  const c5 = await prisma.candidate.create({
+    data: {
+      email: "candidate5@example.com",
+      passwordHash,
+      name: "Candidate Five",
+      roleId: candidateRole.id,
+    },
+  });
+
+  console.log("Creating employer admin...");
   await prisma.role.update({
     where: { id: employerRole.id },
     data: {
@@ -154,6 +217,9 @@ async function main(): Promise<void> {
     data: [
       { candidateId: c1.id, status: "applied" },
       { candidateId: c2.id, status: "attempted" },
+      { candidateId: c3.id, status: "applied" },
+      { candidateId: c4.id, status: "applied" },
+      { candidateId: c5.id, status: "applied" },
     ],
   });
 

@@ -4,8 +4,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getSession, clearSession } from "../../lib/session";
 import { requestCrossAppToken, buildAssessmentCallbackUrl } from "../../lib/auth-client";
-import { fetchMyApplication } from "../../lib/candidate-client";
+import { fetchMyApplication, fetchMyResults } from "../../lib/candidate-client";
+import type { DetailedResults } from "../../lib/candidate-client";
 import { env } from "../../lib/env";
+import { useWebSocket, WSMessage } from "../../lib/useWebSocket";
 import type { SessionData } from "../../lib/session";
 import type { CandidateFunnelStatus } from "@zetheta/shared-types";
 
@@ -15,7 +17,6 @@ interface StatusConfig {
   label: string;
   description: string;
   color: string;
-  icon: string;
   ctaEnabled: boolean;
   ctaLabel: string;
 }
@@ -25,7 +26,6 @@ const STATUS_MAP: Record<AssessmentStatus, StatusConfig> = {
     label: "Ready",
     description: "You have not started an assessment yet.",
     color: "status--ready",
-    icon: "🟢",
     ctaEnabled: true,
     ctaLabel: "Start Assessment",
   },
@@ -33,7 +33,6 @@ const STATUS_MAP: Record<AssessmentStatus, StatusConfig> = {
     label: "Applied",
     description: "Your application is registered. You can start the assessment.",
     color: "status--applied",
-    icon: "📋",
     ctaEnabled: true,
     ctaLabel: "Start Assessment",
   },
@@ -41,15 +40,13 @@ const STATUS_MAP: Record<AssessmentStatus, StatusConfig> = {
     label: "Submitted",
     description: "Your assessment has been submitted and is being evaluated.",
     color: "status--attempted",
-    icon: "⏳",
     ctaEnabled: false,
     ctaLabel: "Awaiting Evaluation",
   },
   evaluated: {
     label: "Evaluated",
-    description: "Your assessment has been evaluated. Results are available.",
+    description: "Your assessment has been evaluated. Results are available below.",
     color: "status--evaluated",
-    icon: "✅",
     ctaEnabled: false,
     ctaLabel: "Assessment Complete",
   },
@@ -57,15 +54,41 @@ const STATUS_MAP: Record<AssessmentStatus, StatusConfig> = {
 
 export function Dashboard() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [session, setSession] = useState<SessionData | null>(null);
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus>("ready");
+  const [score, setScore] = useState<number | null>(null);
+  const [maxScore, setMaxScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [detailedResults, setDetailedResults] = useState<DetailedResults | null>(null);
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [loadingResults, setLoadingResults] = useState(false);
 
-  // Route guard & data fetch
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3500);
+  }, []);
+
+  // Real-time updates
+  const handleWSMessage = useCallback((msg: WSMessage) => {
+    if (msg.type === "SCORE_READY") {
+      const payload = msg.payload;
+      if (session && (payload.candidateId === session.user.id || payload.email === session.user.email)) {
+        setAssessmentStatus("evaluated");
+        setScore(payload.score);
+        setMaxScore(payload.maxScore);
+        showToast("Assessment evaluated successfully!");
+      }
+    }
+  }, [session, showToast]);
+
+  useWebSocket(handleWSMessage);
+
   useEffect(() => {
+    setMounted(true);
     const s = getSession();
     if (!s) {
       router.replace("/");
@@ -76,7 +99,8 @@ export function Dashboard() {
     fetchMyApplication(s.token)
       .then((app) => {
         setAssessmentStatus(app.status);
-        // Optionally update session if applicationId in DB differs from session storage
+        setScore(app.score);
+        setMaxScore(app.maxScore);
         setSession((prev) => (prev ? { ...prev, applicationId: app.applicationId } : null));
       })
       .catch((err) => {
@@ -88,11 +112,6 @@ export function Dashboard() {
       });
   }, [router]);
 
-  const showToast = useCallback((message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3500);
-  }, []);
-
   async function handleStartAssessment(): Promise<void> {
     if (!session) return;
     setError(null);
@@ -103,8 +122,7 @@ export function Dashboard() {
         env.NEXT_PUBLIC_ASSESSMENT_ENGINE_URL,
         result.token,
       );
-      showToast("Redirecting to assessment…");
-      // Small delay so toast is visible before navigation
+      showToast("Redirecting to assessment...");
       await new Promise((r) => setTimeout(r, 600));
       window.location.assign(callbackUrl);
     } catch (caught) {
@@ -116,16 +134,31 @@ export function Dashboard() {
     }
   }
 
+  async function handleViewDetails(): Promise<void> {
+    if (!session) return;
+    setLoadingResults(true);
+    try {
+      const results = await fetchMyResults(session.token);
+      setDetailedResults(results);
+      setShowResultsModal(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to load results";
+      setError(msg);
+    } finally {
+      setLoadingResults(false);
+    }
+  }
+
   function handleLogout(): void {
     clearSession();
     router.replace("/");
   }
 
-  if (loading) {
+  if (loading || !mounted) {
     return (
       <div className="dashboard-loading" aria-live="polite">
         <div className="spinner" aria-label="Loading dashboard" />
-        <p>Loading your dashboard…</p>
+        <p>Loading your dashboard...</p>
       </div>
     );
   }
@@ -142,6 +175,14 @@ export function Dashboard() {
         <div className="toast" role="status" aria-live="polite">
           {toast}
         </div>
+      ) : null}
+
+      {/* Results Modal */}
+      {showResultsModal && detailedResults ? (
+        <ResultsModal
+          results={detailedResults}
+          onClose={() => setShowResultsModal(false)}
+        />
       ) : null}
 
       {/* Header */}
@@ -172,11 +213,10 @@ export function Dashboard() {
         {/* Welcome hero */}
         <section className="dashboard__hero">
           <div className="dashboard__hero-text">
-            <h1 className="dashboard__greeting">Hello, {session.user.name.split(" ")[0]} 👋</h1>
+            <h1 className="dashboard__greeting">Hello, {session.user.name.split(" ")[0]}</h1>
             <p className="dashboard__email">{session.user.email}</p>
           </div>
           <div className={`status-badge ${statusCfg.color}`}>
-            <span className="status-badge__icon" aria-hidden="true">{statusCfg.icon}</span>
             <span className="status-badge__label">{statusCfg.label}</span>
           </div>
         </section>
@@ -190,29 +230,15 @@ export function Dashboard() {
             <p className="assessment-card__desc">{statusCfg.description}</p>
 
             <ul className="assessment-card__meta">
-              <li>
-                <span className="meta-icon" aria-hidden="true">📝</span>
-                Multiple-choice questions
-              </li>
-              <li>
-                <span className="meta-icon" aria-hidden="true">⏱️</span>
-                Timed assessment · 30 minutes
-              </li>
-              <li>
-                <span className="meta-icon" aria-hidden="true">🔒</span>
-                Single-attempt · cannot be retaken
-              </li>
-              <li>
-                <span className="meta-icon" aria-hidden="true">🔑</span>
-                Secure cross-app handoff via RS256 token
-              </li>
+              <li>Multiple-choice questions</li>
+              <li>Timed assessment - 30 minutes</li>
+              <li>Single-attempt - cannot be retaken</li>
             </ul>
           </div>
 
           <div className="assessment-card__action">
             {error ? (
               <div role="alert" className="form-error" style={{ marginBottom: "0.75rem" }}>
-                <span className="form-error__icon" aria-hidden="true">⚠️</span>
                 {error}
               </div>
             ) : null}
@@ -228,13 +254,10 @@ export function Dashboard() {
               {starting ? (
                 <span className="btn__loading">
                   <span className="spinner spinner--sm" aria-hidden="true" />
-                  Generating secure token…
+                  Starting...
                 </span>
               ) : (
-                <>
-                  <span aria-hidden="true">{statusCfg.ctaEnabled ? "🚀" : "🔒"}</span>
-                  {statusCfg.ctaLabel}
-                </>
+                statusCfg.ctaLabel
               )}
             </button>
 
@@ -242,40 +265,179 @@ export function Dashboard() {
               <p className="assessment-card__note">
                 {assessmentStatus === "attempted"
                   ? "Your responses are being processed by our evaluation pipeline."
-                  : "Thank you for completing the assessment. Your employer will be in touch."}
+                  : "Thank you for completing the assessment. Your score is now recorded."}
               </p>
             ) : null}
           </div>
         </section>
 
-        {/* Info cards */}
-        <section className="info-grid" aria-label="Assessment information">
-          <div className="info-card">
-            <span className="info-card__icon" aria-hidden="true">🔐</span>
-            <h3 className="info-card__title">Secure Handoff</h3>
-            <p className="info-card__desc">
-              When you start, a short-lived cryptographic token (valid 60 s) is generated and
-              passed securely to the assessment engine. It is single-use and cannot be replayed.
-            </p>
-          </div>
-          <div className="info-card">
-            <span className="info-card__icon" aria-hidden="true">⚡</span>
-            <h3 className="info-card__title">Real-Time Scoring</h3>
-            <p className="info-card__desc">
-              After submission, your answers are evaluated asynchronously. Your employer's
-              dashboard is updated in real time as soon as scoring completes.
-            </p>
-          </div>
-          <div className="info-card">
-            <span className="info-card__icon" aria-hidden="true">🛡️</span>
-            <h3 className="info-card__title">Fair & Confidential</h3>
-            <p className="info-card__desc">
-              Correct answers are never exposed on the client. All data is transmitted over
-              secure channels and stored in an audited PostgreSQL database.
-            </p>
-          </div>
-        </section>
+        {/* Results Table */}
+        {assessmentStatus === "evaluated" || assessmentStatus === "attempted" ? (
+          <section className="dashboard-results-section" style={{ marginTop: "2rem" }}>
+            <h2 className="section-title" style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "700" }}>Assessment History</h2>
+            <div className="results-table-container" style={{ 
+              background: "var(--color-surface)", 
+              border: "1px solid var(--color-border)", 
+              borderRadius: "var(--radius-lg)",
+              overflow: "hidden"
+            }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                <thead>
+                  <tr style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid var(--color-border)" }}>
+                    <th style={{ padding: "1rem 1.5rem", fontSize: "0.8rem", color: "var(--color-text-muted)", textTransform: "uppercase" }}>Test Name</th>
+                    <th style={{ padding: "1rem 1.5rem", fontSize: "0.8rem", color: "var(--color-text-muted)", textTransform: "uppercase" }}>Status</th>
+                    <th style={{ padding: "1rem 1.5rem", fontSize: "0.8rem", color: "var(--color-text-muted)", textTransform: "uppercase", textAlign: "center" }}>Result</th>
+                    <th style={{ padding: "1rem 1.5rem", fontSize: "0.8rem", color: "var(--color-text-muted)", textTransform: "uppercase", textAlign: "right" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                    <td style={{ padding: "1.25rem 1.5rem", fontWeight: "600" }}>Technical Assessment</td>
+                    <td style={{ padding: "1.25rem 1.5rem" }}>
+                      <span style={{ 
+                        padding: "0.25rem 0.75rem", 
+                        borderRadius: "var(--radius-full)", 
+                        fontSize: "0.75rem", 
+                        fontWeight: "700",
+                        background: assessmentStatus === "evaluated" ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)",
+                        color: assessmentStatus === "evaluated" ? "#4ade80" : "#fbbf24",
+                        border: assessmentStatus === "evaluated" ? "1px solid rgba(34,197,94,0.2)" : "1px solid rgba(245,158,11,0.2)"
+                      }}>
+                        {assessmentStatus.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem", textAlign: "center" }}>
+                      {assessmentStatus === "evaluated" ? (
+                        <span style={{ fontSize: "1.1rem", fontWeight: "800", color: "var(--color-primary)" }}>
+                          {score} / {maxScore}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "0.85rem", color: "var(--color-text-faint)", fontStyle: "italic" }}>Calculating...</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem", textAlign: "right" }}>
+                      {assessmentStatus === "evaluated" ? (
+                        <button
+                          type="button"
+                          onClick={handleViewDetails}
+                          disabled={loadingResults}
+                          style={{
+                            padding: "0.4rem 1rem",
+                            borderRadius: "var(--radius-md)",
+                            border: "1px solid var(--color-primary)",
+                            background: "transparent",
+                            color: "var(--color-primary)",
+                            fontSize: "0.8rem",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          {loadingResults ? "Loading..." : "View Details"}
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: "0.8rem", color: "var(--color-text-faint)" }}>--</span>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
       </main>
+    </div>
+  );
+}
+
+/* ── Results Modal ────────────────────────────────────────────────── */
+
+function ResultsModal({ results, onClose }: { results: DetailedResults; onClose: () => void }) {
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{
+        background: "var(--color-surface, #1a1d2e)", border: "1px solid var(--color-border, #2a2d3e)",
+        borderRadius: "1rem", width: "90%", maxWidth: "700px", maxHeight: "85vh",
+        overflow: "auto", padding: "2rem",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+          <h2 style={{ fontSize: "1.4rem", fontWeight: "800", margin: 0 }}>Detailed Results</h2>
+          <button onClick={onClose} style={{
+            background: "transparent", border: "1px solid var(--color-border, #2a2d3e)",
+            color: "var(--color-text-muted, #999)", borderRadius: "0.5rem",
+            padding: "0.4rem 0.8rem", cursor: "pointer", fontSize: "0.85rem",
+          }}>Close</button>
+        </div>
+
+        {/* Score Summary */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "2rem",
+        }}>
+          <div style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: "0.75rem", padding: "1rem", textAlign: "center" }}>
+            <div style={{ fontSize: "1.8rem", fontWeight: "800", color: "#818cf8" }}>{results.score}/{results.maxScore}</div>
+            <div style={{ fontSize: "0.75rem", color: "#999", marginTop: "0.25rem" }}>Score</div>
+          </div>
+          <div style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "0.75rem", padding: "1rem", textAlign: "center" }}>
+            <div style={{ fontSize: "1.8rem", fontWeight: "800", color: "#4ade80" }}>{results.percentage}%</div>
+            <div style={{ fontSize: "0.75rem", color: "#999", marginTop: "0.25rem" }}>Percentage</div>
+          </div>
+          <div style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "0.75rem", padding: "1rem", textAlign: "center" }}>
+            <div style={{ fontSize: "1.8rem", fontWeight: "800", color: "#fbbf24" }}>{results.questions.filter(q => q.isCorrect).length}</div>
+            <div style={{ fontSize: "0.75rem", color: "#999", marginTop: "0.25rem" }}>Correct</div>
+          </div>
+        </div>
+
+        {/* Questions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {results.questions.map((q) => (
+            <div key={q.sequence} style={{
+              border: `1px solid ${q.isCorrect ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+              borderRadius: "0.75rem", padding: "1.25rem",
+              background: q.isCorrect ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                <span style={{ fontWeight: "700", fontSize: "0.9rem" }}>Question {q.sequence}</span>
+                <span style={{
+                  padding: "0.15rem 0.6rem", borderRadius: "9999px", fontSize: "0.7rem", fontWeight: "700",
+                  background: q.isCorrect ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+                  color: q.isCorrect ? "#4ade80" : "#f87171",
+                  border: `1px solid ${q.isCorrect ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+                }}>{q.isCorrect ? "CORRECT" : "WRONG"}</span>
+              </div>
+              <p style={{ marginBottom: "0.75rem", lineHeight: "1.5", fontSize: "0.95rem" }}>{q.questionText}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                {(q.options as any[]).map((opt) => {
+                  const isCandidate = opt.label === q.candidateAnswer;
+                  const isCorrect = opt.label === q.correctAnswer;
+                  let bg = "rgba(255,255,255,0.03)";
+                  let borderColor = "rgba(255,255,255,0.08)";
+                  let textColor = "#ccc";
+                  if (isCorrect) { bg = "rgba(34,197,94,0.1)"; borderColor = "rgba(34,197,94,0.4)"; textColor = "#4ade80"; }
+                  if (isCandidate && !isCorrect) { bg = "rgba(239,68,68,0.1)"; borderColor = "rgba(239,68,68,0.4)"; textColor = "#f87171"; }
+                  return (
+                    <div key={opt.label} style={{
+                      padding: "0.6rem 0.8rem", borderRadius: "0.5rem",
+                      border: `1px solid ${borderColor}`, background: bg, fontSize: "0.85rem", color: textColor,
+                    }}>
+                      <strong>{opt.label}.</strong> {opt.text}
+                      {isCorrect ? <span style={{ float: "right", fontSize: "0.7rem" }}>Correct</span> : null}
+                      {isCandidate && !isCorrect ? <span style={{ float: "right", fontSize: "0.7rem" }}>Your answer</span> : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

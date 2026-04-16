@@ -56,18 +56,42 @@ body {
   line-height: 1.6;
 }
 
-/* ---------- Spinner ---------- */
-@keyframes spin { to { transform: rotate(360deg); } }
-.spinner {
-  display: inline-block;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid rgba(255,255,255,0.15);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+/* ---------- Custom Scrollbar ---------- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
-.spinner--sm { width: 0.875rem; height: 0.875rem; border-width: 1.5px; }
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ---------- Animations ---------- */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDown { 
+  from { opacity: 0; transform: translateY(-12px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------- Buttons ---------- */
 .btn {

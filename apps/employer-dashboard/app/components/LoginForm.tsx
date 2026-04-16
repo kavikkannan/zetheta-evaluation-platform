@@ -35,7 +35,6 @@ export function LoginForm() {
   return (
     <div className="login-form-wrapper">
       <div className="login-card">
-        <span className="login-card__icon" aria-hidden="true">🏢</span>
         <h2 className="login-card__title">Employer Sign In</h2>
         <p className="login-card__subtitle">Access your talent evaluation pipeline.</p>
 
@@ -66,7 +65,6 @@ export function LoginForm() {
 
           {error && (
             <div className="form-error">
-              <span className="form-error__icon">⚠️</span>
               <p>{error}</p>
             </div>
           )}

@@ -429,6 +429,13 @@ export async function createApp(): Promise<FastifyInstance> {
         prisma.application.findFirst({
           where: { candidateId: user.sub },
           orderBy: { createdAt: "desc" },
+          include: {
+            submissions: {
+              take: 1,
+              orderBy: { submittedAt: "desc" },
+              include: { score: true },
+            },
+          },
         }),
         prisma.assessmentSession.findFirst({
           orderBy: { createdAt: "asc" },
@@ -444,6 +451,9 @@ export async function createApp(): Promise<FastifyInstance> {
         });
       }
 
+      const latestSubmission = application.submissions[0];
+      const score = latestSubmission?.score;
+
       return reply.send({
         status: "success",
         data: {
@@ -451,6 +461,8 @@ export async function createApp(): Promise<FastifyInstance> {
           status: application.status,
           assessmentSessionId: firstSession?.id ?? "",
           submittedAt: application.submittedAt?.toISOString() ?? null,
+          score: score ? score.score : null,
+          maxScore: score ? score.maxScore : null,
         },
       });
     },
@@ -563,6 +575,128 @@ export async function createApp(): Promise<FastifyInstance> {
             limit,
             total,
           },
+        },
+      });
+    },
+  );
+
+  // ── Detailed Results: Candidate's own ──────────────────────────────
+  app.get(
+    "/v1/candidates/me/results",
+    {
+      preHandler: [authenticatePreHandler, generalRateLimitPreHandler],
+    },
+    async (request, reply) => {
+      const user = (request as unknown as AuthenticatedRequest).user;
+
+      const application = await prisma.application.findFirst({
+        where: { candidateId: user.sub },
+        orderBy: { createdAt: "desc" },
+        include: {
+          candidate: { select: { name: true, email: true } },
+          submissions: {
+            take: 1,
+            orderBy: { submittedAt: "desc" },
+            include: {
+              score: true,
+              responses: {
+                include: { mcqQuestion: true },
+                orderBy: { mcqQuestion: { sequence: "asc" } },
+              },
+            },
+          },
+        },
+      });
+
+      if (!application) {
+        throw new HttpError({ statusCode: 404, code: "NOT_FOUND", message: "No application found" });
+      }
+
+      const sub = application.submissions[0];
+      if (!sub || !sub.score) {
+        throw new HttpError({ statusCode: 404, code: "NOT_FOUND", message: "No evaluated submission found" });
+      }
+
+      const questions = sub.responses.map((r) => ({
+        sequence: r.mcqQuestion.sequence,
+        questionText: r.mcqQuestion.questionText,
+        options: r.mcqQuestion.options,
+        candidateAnswer: r.answer,
+        correctAnswer: r.mcqQuestion.correctAnswer,
+        isCorrect: r.answer === r.mcqQuestion.correctAnswer,
+      }));
+
+      return reply.send({
+        status: "success",
+        data: {
+          candidateName: application.candidate.name,
+          candidateEmail: application.candidate.email,
+          score: sub.score.score,
+          maxScore: sub.score.maxScore,
+          percentage: sub.score.maxScore > 0 ? Math.round((sub.score.score / sub.score.maxScore) * 100) : 0,
+          evaluatedAt: sub.score.evaluatedAt.toISOString(),
+          questions,
+        },
+      });
+    },
+  );
+
+  // ── Detailed Results: Employer views a candidate ───────────────────
+  app.get(
+    "/v1/dashboard/candidates/:candidateId/results",
+    {
+      preHandler: [authenticatePreHandler, authorize("read:dashboard"), generalRateLimitPreHandler],
+    },
+    async (request, reply) => {
+      const { candidateId } = request.params as { candidateId: string };
+
+      const application = await prisma.application.findFirst({
+        where: { candidateId },
+        orderBy: { createdAt: "desc" },
+        include: {
+          candidate: { select: { name: true, email: true } },
+          submissions: {
+            take: 1,
+            orderBy: { submittedAt: "desc" },
+            include: {
+              score: true,
+              responses: {
+                include: { mcqQuestion: true },
+                orderBy: { mcqQuestion: { sequence: "asc" } },
+              },
+            },
+          },
+        },
+      });
+
+      if (!application) {
+        throw new HttpError({ statusCode: 404, code: "NOT_FOUND", message: "No application found for this candidate" });
+      }
+
+      const sub = application.submissions[0];
+      if (!sub || !sub.score) {
+        throw new HttpError({ statusCode: 404, code: "NOT_FOUND", message: "No evaluated submission found" });
+      }
+
+      const questions = sub.responses.map((r) => ({
+        sequence: r.mcqQuestion.sequence,
+        questionText: r.mcqQuestion.questionText,
+        options: r.mcqQuestion.options,
+        candidateAnswer: r.answer,
+        correctAnswer: r.mcqQuestion.correctAnswer,
+        isCorrect: r.answer === r.mcqQuestion.correctAnswer,
+      }));
+
+      return reply.send({
+        status: "success",
+        data: {
+          candidateName: application.candidate.name,
+          candidateEmail: application.candidate.email,
+          score: sub.score.score,
+          maxScore: sub.score.maxScore,
+          percentage: sub.score.maxScore > 0 ? Math.round((sub.score.score / sub.score.maxScore) * 100) : 0,
+          evaluatedAt: sub.score.evaluatedAt.toISOString(),
+          questions,
         },
       });
     },

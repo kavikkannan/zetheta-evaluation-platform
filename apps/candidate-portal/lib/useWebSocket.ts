@@ -50,7 +50,8 @@ export function useWebSocket(onMessage?: (msg: WSMessage) => void) {
       };
 
       socket.onerror = (err) => {
-        console.warn("WebSocket connection attempt failed (URL: " + env.NEXT_PUBLIC_WEBSOCKET_URL + "). Retrying...");
+        // Use warn instead of error to avoid triggering the Next.js dev overlay for transient blips
+        console.warn("WebSocket connection attempt failed (URL: " + env.NEXT_PUBLIC_WEBSOCKET_URL + "). Will retry locally...");
         if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
           socket.close();
         }

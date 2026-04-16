@@ -94,21 +94,28 @@ export class EvaluationProcessor {
         }
       }
 
-      // 4. Persist Score
-      const scoreRecord = await this.prisma.score.create({
-        data: {
-          submissionId,
-          score: scoreVal,
-          maxScore,
-          workerId: this.workerId,
-        },
-      });
+      // 4. Persist Score & update application status atomically
+      const [scoreRecord] = await this.prisma.$transaction([
+        this.prisma.score.create({
+          data: {
+            submissionId,
+            score: scoreVal,
+            maxScore,
+            workerId: this.workerId,
+          },
+        }),
+        this.prisma.application.update({
+          where: { id: submission.applicationId },
+          data: { status: "evaluated" },
+        }),
+      ]);
 
-      logger.info({ submissionId, scoreId: scoreRecord.id, score: scoreVal, maxScore }, "Score calculated and saved");
+      logger.info({ submissionId, scoreId: scoreRecord.id, score: scoreVal, maxScore }, "Score calculated, saved, and application marked as evaluated");
 
       // 5. Publish Event
       const eventPayload = {
         submissionId,
+        candidateId: submission.application.candidateId,
         score: scoreVal,
         maxScore,
         evaluatedAt: scoreRecord.evaluatedAt.toISOString(),
