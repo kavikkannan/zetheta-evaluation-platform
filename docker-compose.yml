@@ -78,6 +78,8 @@ services:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      BULLMQ_QUEUE_NAME: evaluation-queue
+      WORKER_ID: worker-1
     depends_on:
       postgres:
         condition: service_healthy

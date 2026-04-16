@@ -1,11 +1,12 @@
-FROM node:20-alpine
+FROM node:20-bullseye
 
 WORKDIR /app
 
 COPY . .
 
-RUN corepack enable
+RUN corepack enable \
+  && pnpm install --no-frozen-lockfile \
+  && pnpm exec prisma generate
 
-EXPOSE 3010
-
-CMD ["sh", "-c", "echo '@zetheta/evaluation-worker container placeholder started on port 3010' && sleep infinity"]
+# No port to expose for a worker, but let's keep it healthy
+CMD ["sh", "-c", "pnpm --filter @zetheta/evaluation-worker dev"]
