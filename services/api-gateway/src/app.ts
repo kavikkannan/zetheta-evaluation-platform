@@ -350,6 +350,45 @@ export async function createApp(): Promise<FastifyInstance> {
   );
 
   app.get(
+    "/v1/candidates/me/application",
+    {
+      preHandler: [authenticatePreHandler, authorize("read:assessment"), generalRateLimitPreHandler],
+    },
+    async (request, reply) => {
+      const user = (request as unknown as AuthenticatedRequest).user;
+
+      const [application, firstSession] = await Promise.all([
+        prisma.application.findFirst({
+          where: { candidateId: user.sub },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.assessmentSession.findFirst({
+          orderBy: { createdAt: "asc" },
+          select: { id: true },
+        }),
+      ]);
+
+      if (!application) {
+        throw new HttpError({
+          statusCode: 404,
+          code: "NOT_FOUND",
+          message: "No application found for this candidate",
+        });
+      }
+
+      return reply.send({
+        status: "success",
+        data: {
+          applicationId: application.id,
+          status: application.status,
+          assessmentSessionId: firstSession?.id ?? "",
+          submittedAt: application.submittedAt?.toISOString() ?? null,
+        },
+      });
+    },
+  );
+
+  app.get(
     "/v1/scores/:submissionId",
     {
       preHandler: [

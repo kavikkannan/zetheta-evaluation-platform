@@ -1,11 +1,12 @@
 import { apiRequest } from "./api-client";
+import type { UserRole } from "@zetheta/shared-types";
 
 export interface LoginResult {
   accessToken: string;
   user: {
     id: string;
     email: string;
-    role: string;
+    role: UserRole;
     name: string;
   };
 }
