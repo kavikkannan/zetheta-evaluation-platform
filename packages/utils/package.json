@@ -1,23 +1,21 @@
 {
-    "name":  "@zetheta/utils",
-    "version":  "0.0.1",
-    "private":  true,
-    "main":  "dist/index.js",
-    "types":  "dist/index.d.ts",
-    "files":  [
-                  "dist"
-              ],
-    "scripts":  {
-                    "build":  "tsup src/index.ts --format cjs,esm --dts",
-                    "dev":  "tsup src/index.ts --watch --format cjs,esm --dts",
-                    "lint":  "eslint src --max-warnings=0",
-                    "test":  "echo \"No tests yet for utils\""
-                },
-    "dependencies":  {
-                         "bcryptjs":  "^2.4.3",
-                         "zod":  "^3.24.1"
-                     },
-    "devDependencies":  {
-                            "@zetheta/shared-config":  "workspace:*"
-                        }
+  "name": "@zetheta/utils",
+  "version": "0.0.1",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --watch --format cjs,esm --dts",
+    "lint": "eslint src --max-warnings=0",
+    "test": "echo \"No tests yet for utils\""
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@zetheta/shared-config": "workspace:*"
+  }
 }

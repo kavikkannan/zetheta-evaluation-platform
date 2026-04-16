@@ -42,7 +42,8 @@ services:
 
   auth-service:
     build:
-      context: ./services/auth-service
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
     container_name: zetheta-auth-service
     ports:
       - "${AUTH_SERVICE_PORT:-3002}:3002"
@@ -50,10 +51,12 @@ services:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/run/secrets/jwt_private_key}
-      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/run/secrets/jwt_private_key.pem}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key.pem}
       JWT_ISSUER: ${JWT_ISSUER:-https://zetheta.com}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-assessment-engine}
+    volumes:
+      - ./secrets:/run/secrets:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,3 +129,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+

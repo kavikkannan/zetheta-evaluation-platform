@@ -1,11 +1,13 @@
-FROM node:20-alpine
+FROM node:20-bullseye
 
 WORKDIR /app
 
 COPY . .
 
-RUN corepack enable
+RUN corepack enable \
+  && pnpm install --no-frozen-lockfile \
+  && pnpm exec prisma generate
 
 EXPOSE 3002
 
-CMD ["sh", "-c", "echo '@zetheta/auth-service container placeholder started on port 3002' && sleep infinity"]
+CMD ["sh", "-c", "pnpm --filter @zetheta/auth-service dev"]

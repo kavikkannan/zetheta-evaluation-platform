@@ -1,2 +1,2 @@
-export * from "./password";
-export * from "./validation";
+export * from "./password.ts";
+export * from "./validation.ts";

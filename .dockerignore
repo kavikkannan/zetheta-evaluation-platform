@@ -1,0 +1,8 @@
+node_modules
+.git
+.turbo
+dist
+coverage
+**/node_modules
+**/dist
+**/.turbo

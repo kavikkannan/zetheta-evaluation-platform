@@ -1,4 +1,9 @@
 {
   "extends": "@zetheta/shared-config/tsconfig/node-service.json",
-  "include": ["src"]
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }
