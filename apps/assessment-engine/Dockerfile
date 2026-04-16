@@ -1,11 +1,12 @@
-FROM node:20-alpine
+FROM node:20-bullseye
 
 WORKDIR /app
 
 COPY . .
 
-RUN corepack enable
+RUN corepack enable \
+  && pnpm install --no-frozen-lockfile
 
 EXPOSE 4002
 
-CMD ["sh", "-c", "echo '@zetheta/assessment-engine container placeholder started on port 4002' && sleep infinity"]
+CMD ["sh", "-c", "pnpm --filter @zetheta/assessment-engine dev"]

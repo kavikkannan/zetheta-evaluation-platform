@@ -1,0 +1,53 @@
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #1d4ed8;
+  --ring: #93c5fd;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top left, #dbeafe, #f8fafc 55%);
+  color: var(--text);
+  font-family: "Segoe UI", "Inter", sans-serif;
+}
+
+.app-shell {
+  min-height: 100vh;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.hero {
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: linear-gradient(145deg, #ffffff, #eff6ff);
+}
+
+.hero h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.content {
+  margin-top: 1rem;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 1rem;
+  background: var(--surface);
+}

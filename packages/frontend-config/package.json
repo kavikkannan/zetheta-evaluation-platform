@@ -1,0 +1,16 @@
+{
+  "name": "@zetheta/frontend-config",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./eslint/next": "./eslint/next.cjs",
+    "./prettier/base": "./prettier/base.cjs",
+    "./tailwind/preset": "./tailwind/preset.cjs"
+  },
+  "scripts": {
+    "build": "echo \"frontend-config does not require build\"",
+    "dev": "echo \"frontend-config does not require dev\"",
+    "lint": "echo \"frontend-config lint is consumed by apps\"",
+    "test": "echo \"No tests yet for frontend-config\""
+  }
+}
