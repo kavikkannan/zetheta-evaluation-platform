@@ -1,13 +1,6 @@
-import { AppShell } from "@zetheta/ui";
+import { redirect } from "next/navigation";
+import { env } from "../../lib/env";
 
-export default function HomePage() {
-  return (
-    <AppShell
-      title="Assessment Engine"
-      subtitle="Token-gated MCQ assessment experience."
-    >
-      <p>This app is initialized with shared frontend foundation and API envelope utilities.</p>
-    </AppShell>
-  );
+export default function Home() {
+  redirect(env.CANDIDATE_PORTAL_URL);
 }
-
