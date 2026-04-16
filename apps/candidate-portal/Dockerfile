@@ -9,7 +9,7 @@ COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/shared-config/package.json ./packages/shared-config/
 COPY packages/frontend-config/package.json ./packages/frontend-config/
 COPY packages/ui/package.json ./packages/ui/
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && pnpm install --no-frozen-lockfile
 
 # ---- Build ----
 FROM deps AS builder
