@@ -15,7 +15,7 @@ RUN pnpm --filter @zetheta/shared-types build || true
 RUN pnpm --filter @zetheta/ui build || true
 # Build the app
 ENV NEXT_TELEMETRY_DISABLED=1
-ARG NEXT_PUBLIC_API_BASE_URL=http://api-gateway:3001/v1
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/v1
 ARG NEXT_PUBLIC_ASSESSMENT_ENGINE_URL=http://localhost:4002
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_ASSESSMENT_ENGINE_URL=$NEXT_PUBLIC_ASSESSMENT_ENGINE_URL

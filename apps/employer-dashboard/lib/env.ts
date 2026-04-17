@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  NEXT_PUBLIC_API_BASE_URL: z.string().url().default("http://127.0.0.1:3001/v1"),
-  NEXT_PUBLIC_WEBSOCKET_URL: z.string().default("ws://127.0.0.1:3003"),
+  NEXT_PUBLIC_API_BASE_URL: z.string().url().default("http://localhost:3001/v1"),
+  NEXT_PUBLIC_WEBSOCKET_URL: z.string().default("ws://localhost:3003"),
   // Internal API URL for Server-Side-Rendering (SSR)
   API_BASE_URL: z.string().url().optional(),
 });
