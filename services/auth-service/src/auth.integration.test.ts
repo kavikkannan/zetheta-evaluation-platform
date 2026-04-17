@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { generateKeyPairSync } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@zetheta/database-client";
 import Redis from "ioredis";
 import jwt from "jsonwebtoken";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@zetheta/database-client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();

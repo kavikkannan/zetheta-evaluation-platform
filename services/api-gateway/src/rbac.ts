@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@zetheta/database-client";
 
 export async function roleHasPermission(params: {
   prisma: PrismaClient;

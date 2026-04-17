@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@zetheta/database-client";
 
 type PlanJson = {
   Plan?: {

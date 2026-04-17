@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${internalToken}`,
+      Authorization: `Bearer ${sessionCookie.value}`,
+      "x-internal-token": env.INTERNAL_TOKEN_SECRET,
     },
     body: JSON.stringify({ data: body }),
   });

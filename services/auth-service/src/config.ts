@@ -11,6 +11,8 @@ const configSchema = z.object({
   JWT_AUDIENCE: z.string().default("assessment-engine"),
   SESSION_TOKEN_TTL_SECONDS: z.coerce.number().default(60 * 60 * 8),
   CROSS_APP_TOKEN_TTL_SECONDS: z.coerce.number().default(300),
+  CORS_ORIGINS: z.string().default("http://localhost:4001,http://localhost:4003"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
 
 export type AuthConfig = z.infer<typeof configSchema>;

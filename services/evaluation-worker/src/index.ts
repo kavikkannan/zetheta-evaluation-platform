@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@zetheta/database-client";
 import Redis from "ioredis";
 import pino from "pino";
 import Fastify from "fastify";
@@ -12,10 +12,10 @@ register.setDefaultLabels({ service: "evaluation-worker" });
 
 const logger = pino({
   level: "info",
-  transport: {
+  transport: process.env.NODE_ENV === "development" ? {
     target: "pino-pretty",
     options: { colorize: true },
-  },
+  } : undefined,
 });
 
 async function main() {

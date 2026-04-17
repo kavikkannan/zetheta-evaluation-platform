@@ -1,0 +1,10 @@
+{
+  "name": "@zetheta/database-client",
+  "version": "0.0.1",
+  "private": true,
+  "main": "generated/index.js",
+  "types": "generated/index.d.ts",
+  "dependencies": {
+    "@prisma/client": "^6.19.3"
+  }
+}

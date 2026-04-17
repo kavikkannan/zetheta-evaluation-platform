@@ -7,6 +7,7 @@ const envSchema = z.object({
   JWT_ISSUER: z.string().default("https://zetheta.com"),
   JWT_AUDIENCE: z.string().default("assessment-engine"),
   CANDIDATE_PORTAL_URL: z.string().url().default("http://localhost:4001"),
+  INTERNAL_TOKEN_SECRET: z.string().min(16).default("REPLACE_ME_PRODUCTION_SECRET"),
 });
 
 export const env = envSchema.parse({
@@ -16,4 +17,5 @@ export const env = envSchema.parse({
   JWT_ISSUER: process.env.JWT_ISSUER,
   JWT_AUDIENCE: process.env.JWT_AUDIENCE,
   CANDIDATE_PORTAL_URL: process.env.CANDIDATE_PORTAL_URL,
+  INTERNAL_TOKEN_SECRET: process.env.INTERNAL_TOKEN_SECRET,
 });

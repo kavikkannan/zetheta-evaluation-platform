@@ -1,5 +1,5 @@
 import { Job, UnrecoverableError } from "bullmq";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@zetheta/database-client";
 import type Redis from "ioredis";
 import pino from "pino";
 import { Counter, Histogram } from "prom-client";
@@ -19,10 +19,10 @@ const evaluationDuration = new Histogram({
 
 const logger = pino({
   level: "info",
-  transport: {
+  transport: process.env.NODE_ENV === "development" ? {
     target: "pino-pretty",
     options: { colorize: true },
-  },
+  } : undefined,
 });
 
 export interface EvaluationJobData {

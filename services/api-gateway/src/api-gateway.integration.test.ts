@@ -4,7 +4,7 @@ import path from "node:path";
 import { generateKeyPairSync } from "node:crypto";
 import jwt from "jsonwebtoken";
 import Redis from "ioredis";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@zetheta/database-client";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import type { Queue } from "bullmq";
 import { v4 as uuidv4 } from "uuid";

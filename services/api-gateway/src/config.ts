@@ -22,6 +22,11 @@ const configSchema = z.object({
   AUTH_RATE_LIMIT_PER_IP_PER_WINDOW: z.coerce.number().default(10),
   GENERAL_RATE_LIMIT_PER_USER_PER_WINDOW: z.coerce.number().default(100),
   SUBMISSIONS_RATE_LIMIT_PER_USER_PER_WINDOW: z.coerce.number().default(5),
+  // CORS
+  CORS_ORIGINS: z.string().default("http://localhost:4001,http://localhost:4002,http://localhost:4003"),
+  // Internal Service Auth
+  INTERNAL_TOKEN_SECRET: z.string().min(16, "Internal secret must be at least 16 chars"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
 
 export type ApiGatewayConfig = z.infer<typeof configSchema>;

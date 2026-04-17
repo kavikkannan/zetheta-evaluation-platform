@@ -32,12 +32,15 @@ services:
     ports:
       - "${API_GATEWAY_PORT:-3001}:3001"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
+      HOST: "0.0.0.0"
+      INTERNAL_TOKEN_SECRET: ${INTERNAL_TOKEN_SECRET:-REPLACE_ME_PRODUCTION_SECRET_MIN_16_CHARS}
       DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key.pem}
       JWT_ISSUER: ${JWT_ISSUER:-https://zetheta.com}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-assessment-engine}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4001,http://localhost:4002,http://localhost:4003,http://127.0.0.1:4001,http://127.0.0.1:4002,http://127.0.0.1:4003}
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,13 +57,16 @@ services:
     ports:
       - "${AUTH_SERVICE_PORT:-3002}:3002"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
+      HOST: "0.0.0.0"
+      INTERNAL_TOKEN_SECRET: ${INTERNAL_TOKEN_SECRET:-REPLACE_ME_PRODUCTION_SECRET_MIN_16_CHARS}
       DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/run/secrets/jwt_private_key.pem}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key.pem}
       JWT_ISSUER: ${JWT_ISSUER:-https://zetheta.com}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-assessment-engine}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4001,http://localhost:4003,http://127.0.0.1:4001,http://127.0.0.1:4003}
     volumes:
       - ./secrets:/run/secrets:ro
     depends_on:
@@ -75,7 +81,8 @@ services:
       dockerfile: ./services/evaluation-worker/Dockerfile
     container_name: zetheta-evaluation-worker
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
+      INTERNAL_TOKEN_SECRET: ${INTERNAL_TOKEN_SECRET:-REPLACE_ME_PRODUCTION_SECRET_MIN_16_CHARS}
       DATABASE_URL: ${DATABASE_URL:-postgresql://zetheta:zetheta@postgres:5432/zetheta}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       BULLMQ_QUEUE_NAME: evaluation-queue
@@ -95,7 +102,13 @@ services:
       - "${WEBSOCKET_SERVER_PORT:-3003}:3003"
     environment:
       NODE_ENV: production
+      HOST: "0.0.0.0"
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key.pem}
+      JWT_ISSUER: ${JWT_ISSUER:-https://zetheta.com}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-assessment-engine}
+    volumes:
+      - ./secrets:/run/secrets:ro
     depends_on:
       redis:
         condition: service_started

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@zetheta/database-client";
 import type { FastifyInstance } from "fastify";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
@@ -34,10 +34,7 @@ export async function createApp(): Promise<FastifyInstance> {
   });
 
   await app.register(cors, {
-    origin: [
-      "http://localhost:4001", // Candidate Portal
-      "http://localhost:4003", // Employer Dashboard
-    ],
+    origin: config.CORS_ORIGINS.split(","),
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,

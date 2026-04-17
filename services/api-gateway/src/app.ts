@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import Redis from "ioredis";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@zetheta/database-client";
 import { Queue } from "bullmq";
 import { v4 as uuidv4 } from "uuid";
 import { parseWithSchema, ValidationException } from "@zetheta/utils";
@@ -76,13 +76,9 @@ export async function createApp(): Promise<FastifyInstance> {
   });
 
   await app.register(cors, {
-    origin: [
-      "http://localhost:4001", // Candidate Portal
-      "http://localhost:4002", // Assessment Engine
-      "http://localhost:4003", // Employer Dashboard
-    ],
+    origin: config.CORS_ORIGINS.split(","),
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-internal-token"],
     credentials: true,
   });
 
@@ -168,16 +164,26 @@ export async function createApp(): Promise<FastifyInstance> {
 
     const token = authHeader.slice("Bearer ".length);
     
-    // Internal bypass: allow Assessment Engine backend to forward requests using its secure local session payload
-    if (token.startsWith("engine_")) {
+    // Internal service-to-service authentication: used by Assessment Engine to forward user context
+    const internalToken = req.headers["x-internal-token"];
+    if (internalToken) {
+      if (internalToken !== config.INTERNAL_TOKEN_SECRET) {
+        throw new HttpError({
+          statusCode: 401,
+          code: "UNAUTHORIZED",
+          message: "Invalid internal service token",
+        });
+      }
+
+      // If internal token is valid, we trust the 'Authorization' header contains the base64 user payload
       try {
-        const decoded = Buffer.from(token.slice(7), 'base64').toString('utf-8');
+        const decoded = Buffer.from(token, "base64").toString("utf-8");
         return JSON.parse(decoded) as UnifiedTokenPayload;
       } catch {
         throw new HttpError({
           statusCode: 401,
           code: "UNAUTHORIZED",
-          message: "Invalid engine token",
+          message: "Invalid internal payload encoding",
         });
       }
     }

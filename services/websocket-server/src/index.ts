@@ -1,19 +1,28 @@
 import { WebSocketServer, WebSocket } from "ws";
 import Redis from "ioredis";
 import pino from "pino";
+import jwt from "jsonwebtoken";
+import fs from "node:fs";
 import { loadConfig } from "./config";
 
 const logger = pino({
   level: "info",
-  transport: {
+  transport: process.env.NODE_ENV === "development" ? {
     target: "pino-pretty",
     options: { colorize: true },
-  },
+  } : undefined,
 });
+
+interface AuthenticatedWebSocket extends WebSocket {
+  isAlive: boolean;
+  candidateId?: string;
+}
 
 async function main() {
   const config = loadConfig();
   logger.info({ config }, "Starting WebSocket Server");
+
+  const publicKey = fs.readFileSync(config.JWT_PUBLIC_KEY_PATH, "utf-8");
 
   const wss = new WebSocketServer({ port: config.PORT });
   const redisSubscriber = new Redis(config.REDIS_URL);
@@ -30,23 +39,54 @@ async function main() {
   // Handle incoming messages from Redis
   redisSubscriber.on("message", (channel, message) => {
     if (channel === "score:ready") {
-      logger.info({ message }, "Broadcasting score:ready event");
+      const payload = JSON.parse(message);
+      const targetCandidateId = payload.candidateId;
+
+      logger.info({ message, targetCandidateId }, "Filtering score:ready event");
+
       wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: "SCORE_READY", payload: JSON.parse(message) }));
+        const authClient = client as AuthenticatedWebSocket;
+        if (
+          authClient.readyState === WebSocket.OPEN &&
+          authClient.candidateId === targetCandidateId
+        ) {
+          logger.info({ candidateId: targetCandidateId }, "Broadcasting to target client");
+          authClient.send(JSON.stringify({ type: "SCORE_READY", payload }));
         }
       });
     }
   });
 
-  wss.on("connection", (ws, req) => {
+  wss.on("connection", (ws: AuthenticatedWebSocket, req) => {
     const ip = req.socket.remoteAddress;
-    logger.info({ ip }, "New client connected");
+    const url = new URL(req.url || "", `http://${req.headers.host || "localhost"}`);
+    const token = url.searchParams.get("token");
 
-    (ws as any).isAlive = true;
+    if (!token) {
+      logger.warn({ ip }, "Connection attempt without token. Closing.");
+      ws.close(1008, "Token required");
+      return;
+    }
+
+    try {
+      const decoded = jwt.verify(token, publicKey, {
+        algorithms: ["RS256"],
+        issuer: config.JWT_ISSUER,
+        audience: config.JWT_AUDIENCE,
+      }) as any;
+
+      ws.candidateId = decoded.sub;
+      logger.info({ ip, candidateId: ws.candidateId }, "New authenticated client connected");
+    } catch (err) {
+      logger.error({ ip, err }, "Token verification failed. Closing connection.");
+      ws.close(1008, "Invalid token");
+      return;
+    }
+
+    ws.isAlive = true;
 
     ws.on("pong", () => {
-      (ws as any).isAlive = true;
+      ws.isAlive = true;
     });
 
     ws.on("message", (data) => {
@@ -54,24 +94,25 @@ async function main() {
     });
 
     ws.on("close", () => {
-      logger.info({ ip }, "Client disconnected");
+      logger.info({ ip, candidateId: ws.candidateId }, "Client disconnected");
     });
 
     ws.on("error", (err) => {
-      logger.error({ ip, err }, "WebSocket error");
+      logger.error({ ip, candidateId: ws.candidateId, err }, "WebSocket error");
     });
   });
 
   // Heartbeat to detect dead connections
   const interval = setInterval(() => {
     wss.clients.forEach((ws) => {
-      if ((ws as any).isAlive === false) {
-        logger.info("Terminating inactive client");
-        return ws.terminate();
+      const authClient = ws as AuthenticatedWebSocket;
+      if (authClient.isAlive === false) {
+        logger.info({ candidateId: authClient.candidateId }, "Terminating inactive client");
+        return authClient.terminate();
       }
 
-      (ws as any).isAlive = false;
-      ws.ping();
+      authClient.isAlive = false;
+      authClient.ping();
     });
   }, 30000);
 

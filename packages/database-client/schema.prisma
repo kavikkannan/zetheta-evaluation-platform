@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../packages/database-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ApplicationStatus {
+  applied
+  attempted
+  evaluated
+}
+
+model Candidate {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique(map: "candidates_email_unique") @db.VarChar(255)
+  passwordHash String        @map("password_hash") @db.VarChar(255)
+  name         String        @db.VarChar(255)
+  roleId       String        @map("role_id") @db.Uuid
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  role         Role          @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  applications Application[]
+
+  @@index([email], map: "candidates_email_idx")
+  @@index([roleId], map: "candidates_role_id_idx")
+  @@map("candidates")
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String           @unique(map: "roles_name_unique") @db.VarChar(100)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  candidates      Candidate[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String           @unique(map: "permissions_name_unique") @db.VarChar(100)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId], map: "role_permissions_role_id_idx")
+  @@index([permissionId], map: "role_permissions_permission_id_idx")
+  @@map("role_permissions")
+}
+
+model Application {
+  id          String            @id @default(uuid()) @db.Uuid
+  candidateId String            @map("candidate_id") @db.Uuid
+  status      ApplicationStatus @default(applied)
+  startedAt   DateTime?         @map("started_at") @db.Timestamptz(6)
+  submittedAt DateTime?         @map("submitted_at") @db.Timestamptz(6)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  candidate   Candidate         @relation(fields: [candidateId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  submissions Submission[]
+
+  @@index([candidateId], map: "applications_candidate_id_idx")
+  @@index([status], map: "applications_status_idx")
+  @@index([candidateId, status], map: "applications_candidate_status_idx")
+  @@map("applications")
+}
+
+model AssessmentSession {
+  id               String        @id @default(uuid()) @db.Uuid
+  title            String        @db.VarChar(255)
+  description      String?       @db.Text
+  timeLimitMinutes Int?          @map("time_limit_minutes")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  mcqQuestions     McqQuestion[]
+
+  @@map("assessment_sessions")
+}
+
+model McqQuestion {
+  id                  String            @id @default(uuid()) @db.Uuid
+  assessmentSessionId String            @map("assessment_session_id") @db.Uuid
+  sequence            Int
+  questionText        String            @map("question_text") @db.Text
+  options             Json              @db.JsonB
+  correctAnswer       String            @map("correct_answer") @db.VarChar(10)
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  assessmentSession   AssessmentSession @relation(fields: [assessmentSessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  responses           Response[]
+
+  @@index([assessmentSessionId], map: "mcq_questions_assessment_session_id_idx")
+  @@index([sequence], map: "mcq_questions_sequence_idx")
+  @@map("mcq_questions")
+}
+
+model Submission {
+  id            String      @id @default(uuid()) @db.Uuid
+  applicationId String      @map("application_id") @db.Uuid
+  submittedAt   DateTime    @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  responses     Response[]
+  score         Score?
+
+  @@index([applicationId], map: "submissions_application_id_idx")
+  @@index([submittedAt], map: "submissions_submitted_at_idx")
+  @@map("submissions")
+}
+
+model Response {
+  id           String      @id @default(uuid()) @db.Uuid
+  submissionId String      @map("submission_id") @db.Uuid
+  questionId   String      @map("question_id") @db.Uuid
+  answer       String      @db.VarChar(10)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  submission   Submission  @relation(fields: [submissionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  mcqQuestion  McqQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([submissionId, questionId], map: "responses_submission_question_unique")
+  @@index([submissionId], map: "responses_submission_id_idx")
+  @@index([questionId], map: "responses_question_id_idx")
+  @@index([submissionId, questionId], map: "responses_submission_question_idx")
+  @@map("responses")
+}
+
+model Score {
+  id           String     @id @default(uuid()) @db.Uuid
+  submissionId String     @unique(map: "scores_submission_id_unique") @map("submission_id") @db.Uuid
+  score        Int
+  maxScore     Int        @map("max_score")
+  evaluatedAt  DateTime   @default(now()) @map("evaluated_at") @db.Timestamptz(6)
+  workerId     String?    @map("worker_id") @db.VarChar(100)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([submissionId], map: "scores_submission_id_idx")
+  @@index([evaluatedAt], map: "scores_evaluated_at_idx")
+  @@map("scores")
+}

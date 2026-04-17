@@ -3,13 +3,9 @@ WORKDIR /app
 
 # ---- Install dependencies ----
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY apps/assessment-engine/package.json ./apps/assessment-engine/
-COPY packages/shared-types/package.json ./packages/shared-types/
-COPY packages/shared-config/package.json ./packages/shared-config/
-COPY packages/frontend-config/package.json ./packages/frontend-config/
-COPY packages/ui/package.json ./packages/ui/
-RUN corepack enable && pnpm install --no-frozen-lockfile
+RUN corepack enable
+COPY . .
+RUN pnpm install --frozen-lockfile
 
 # ---- Build ----
 FROM deps AS builder

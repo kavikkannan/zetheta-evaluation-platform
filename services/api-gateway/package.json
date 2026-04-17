@@ -10,7 +10,7 @@
                     "test:watch":  "vitest"
                 },
     "dependencies":  {
-                        "@prisma/client":  "^6.19.3",
+                        "@zetheta/database-client": "workspace:*",
                          "@zetheta/shared-types":  "workspace:*",
                         "@zetheta/utils":  "workspace:*",
                         "bullmq":  "latest",

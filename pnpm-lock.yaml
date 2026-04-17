@@ -102,7 +102,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^3.1.2
-        version: 3.2.4(@types/node@22.19.17)(jiti@2.6.1)(jsdom@25.0.1)(tsx@4.21.0)
+        version: 3.2.4(@types/node@22.19.17)(jiti@1.21.7)(jsdom@25.0.1)(tsx@4.21.0)
 
   apps/candidate-portal:
     dependencies:
@@ -227,7 +227,13 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^3.1.2
-        version: 3.2.4(@types/node@22.19.17)(jiti@1.21.7)(jsdom@25.0.1)(tsx@4.21.0)
+        version: 3.2.4(@types/node@22.19.17)(jiti@2.6.1)(jsdom@25.0.1)(tsx@4.21.0)
+
+  packages/database-client:
+    dependencies:
+      '@prisma/client':
+        specifier: ^6.19.3
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
 
   packages/frontend-config: {}
 
@@ -273,9 +279,9 @@ importers:
       '@fastify/cors':
         specifier: ^10.0.1
         version: 10.1.0
-      '@prisma/client':
-        specifier: ^6.19.3
-        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      '@zetheta/database-client':
+        specifier: workspace:*
+        version: link:../../packages/database-client
       '@zetheta/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -331,6 +337,9 @@ importers:
       '@prisma/client':
         specifier: ^6.19.3
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      '@zetheta/database-client':
+        specifier: workspace:*
+        version: link:../../packages/database-client
       '@zetheta/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -377,6 +386,9 @@ importers:
       '@prisma/client':
         specifier: ^6.19.0
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      '@zetheta/database-client':
+        specifier: workspace:*
+        version: link:../../packages/database-client
       '@zetheta/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -423,6 +435,9 @@ importers:
 
   services/websocket-server:
     dependencies:
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
       '@zetheta/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -432,6 +447,9 @@ importers:
       ioredis:
         specifier: ^5.3.2
         version: 5.10.1
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.3
       pino:
         specifier: ^9.0.0
         version: 9.14.0
