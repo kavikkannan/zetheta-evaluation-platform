@@ -6,8 +6,10 @@ const envSchema = z.object({
   JWT_PUBLIC_KEY_PATH: z.string().default("../../secrets/jwt_public_key.pem"),
   JWT_ISSUER: z.string().default("https://zetheta.com"),
   JWT_AUDIENCE: z.string().default("assessment-engine"),
-  CANDIDATE_PORTAL_URL: z.string().url().default("http://localhost:4001"),
-  INTERNAL_TOKEN_SECRET: z.string().min(16).default("REPLACE_ME_PRODUCTION_SECRET"),
+  CANDIDATE_PORTAL_URL: z.string().url().default("http://127.0.0.1:4001"),
+  INTERNAL_TOKEN_SECRET: z.string().min(16).default("zetheta-internal-secret"),
+  // Internal API URL for Server-Side-Rendering (SSR)
+  API_BASE_URL: z.string().url().optional(),
 });
 
 export const env = envSchema.parse({
@@ -18,4 +20,5 @@ export const env = envSchema.parse({
   JWT_AUDIENCE: process.env.JWT_AUDIENCE,
   CANDIDATE_PORTAL_URL: process.env.CANDIDATE_PORTAL_URL,
   INTERNAL_TOKEN_SECRET: process.env.INTERNAL_TOKEN_SECRET,
+  API_BASE_URL: process.env.API_BASE_URL,
 });

@@ -14,11 +14,15 @@ export default async function AssessmentPage() {
   }
 
   // Use our internal bypass to proxy requests to API Gateway acting as the user
-  const internalToken = `engine_${sessionCookie.value}`;
+  const internalToken = sessionCookie.value;
 
   // 1. Get Application to find assessment ID
-  const appRes = await fetch(`${env.NEXT_PUBLIC_API_BASE_URL}/candidates/me/application`, {
-    headers: { Authorization: `Bearer ${internalToken}` },
+  const baseUrl = env.API_BASE_URL || env.NEXT_PUBLIC_API_BASE_URL;
+  const appRes = await fetch(`${baseUrl}/candidates/me/application`, {
+    headers: { 
+      Authorization: `Bearer ${internalToken}`,
+      "x-internal-token": env.INTERNAL_TOKEN_SECRET,
+    },
     cache: "no-store",
   });
 
@@ -46,8 +50,11 @@ export default async function AssessmentPage() {
   }
 
   // 2. Fetch Questions
-  const questionsRes = await fetch(`${env.NEXT_PUBLIC_API_BASE_URL}/assessments/${assessmentSessionId}/questions`, {
-    headers: { Authorization: `Bearer ${internalToken}` },
+  const questionsRes = await fetch(`${baseUrl}/assessments/${assessmentSessionId}/questions`, {
+    headers: { 
+      Authorization: `Bearer ${internalToken}`,
+      "x-internal-token": env.INTERNAL_TOKEN_SECRET,
+    },
     cache: "no-store",
   });
 

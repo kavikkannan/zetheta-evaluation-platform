@@ -7,7 +7,10 @@
                     "dev":  "tsx watch src/index.ts",
                     "lint":  "eslint src --max-warnings=0",
                     "test":  "vitest run",
-                    "test:watch":  "vitest"
+                    "test:watch":  "vitest",
+                    "db:migrate": "prisma migrate dev",
+                    "db:seed": "tsx prisma/seed.ts",
+                    "db:init": "npm run db:migrate && npm run db:seed"
                 },
     "dependencies":  {
                         "@zetheta/database-client": "workspace:*",

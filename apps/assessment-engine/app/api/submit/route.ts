@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Forward submission to API Gateway
-  const res = await fetch(`${env.NEXT_PUBLIC_API_BASE_URL}/submissions`, {
+  const baseUrl = env.API_BASE_URL || env.NEXT_PUBLIC_API_BASE_URL;
+  const res = await fetch(`${baseUrl}/submissions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

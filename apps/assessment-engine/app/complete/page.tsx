@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { env } from "../../lib/env";
 
+export const dynamic = "force-dynamic";
+
 export default function CompletePage() {
   return (
     <div className="assessment-container">

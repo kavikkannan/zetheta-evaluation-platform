@@ -211,7 +211,7 @@ export function MCQInterface({ questions, applicationId }: MCQInterfaceProps) {
       <div className="question-card">
         <h3 className="question-text">{currentQuestion.questionText}</h3>
         <div className="options-list">
-          {currentQuestion.options.map((opt) => {
+          {(currentQuestion.options || []).map((opt) => {
             const isSelected = selectedAnswer === opt.label;
             return (
               <button

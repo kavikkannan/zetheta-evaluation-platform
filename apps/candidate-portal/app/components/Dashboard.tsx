@@ -85,7 +85,7 @@ export function Dashboard() {
     }
   }, [session, showToast]);
 
-  useWebSocket(handleWSMessage);
+  useWebSocket(handleWSMessage, session?.token);
 
   useEffect(() => {
     setMounted(true);
@@ -414,7 +414,7 @@ function ResultsModal({ results, onClose }: { results: DetailedResults; onClose:
               </div>
               <p style={{ marginBottom: "0.75rem", lineHeight: "1.5", fontSize: "0.95rem" }}>{q.questionText}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                {(q.options as any[]).map((opt) => {
+                {(q.options || []).map((opt) => {
                   const isCandidate = opt.label === q.candidateAnswer;
                   const isCorrect = opt.label === q.correctAnswer;
                   let bg = "rgba(255,255,255,0.03)";

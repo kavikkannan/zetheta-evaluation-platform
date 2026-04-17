@@ -106,12 +106,69 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key.pem}
       JWT_ISSUER: ${JWT_ISSUER:-https://zetheta.com}
-      JWT_AUDIENCE: ${JWT_AUDIENCE:-assessment-engine}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-auth-service}
     volumes:
       - ./secrets:/run/secrets:ro
     depends_on:
       redis:
         condition: service_started
+
+  candidate-portal:
+    build:
+      context: .
+      dockerfile: ./apps/candidate-portal/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/v1}
+        NEXT_PUBLIC_ASSESSMENT_ENGINE_URL: ${NEXT_PUBLIC_ASSESSMENT_ENGINE_URL:-http://localhost:4002}
+    container_name: zetheta-candidate-portal
+    ports:
+      - "${CANDIDATE_PORTAL_PORT:-4001}:4001"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://api-gateway:3001/v1
+    depends_on:
+      - api-gateway
+
+  assessment-engine:
+    build:
+      context: .
+      dockerfile: ./apps/assessment-engine/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/v1}
+        NEXT_PUBLIC_ASSESSMENT_ENGINE_URL: ${NEXT_PUBLIC_ASSESSMENT_ENGINE_URL:-http://localhost:4002}
+    container_name: zetheta-assessment-engine
+    ports:
+      - "${ASSESSMENT_ENGINE_PORT:-4002}:4002"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://api-gateway:3001/v1
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - JWT_PUBLIC_KEY_PATH=${JWT_PUBLIC_KEY_PATH:-/run/secrets/jwt_public_key.pem}
+      - INTERNAL_TOKEN_SECRET=${INTERNAL_TOKEN_SECRET:-REPLACE_ME_PRODUCTION_SECRET_MIN_16_CHARS}
+      - CANDIDATE_PORTAL_URL=${CANDIDATE_PORTAL_URL:-http://localhost:4001}
+    volumes:
+      - ./secrets:/run/secrets:ro
+    depends_on:
+      api-gateway:
+        condition: service_started
+      redis:
+        condition: service_started
+
+  employer-dashboard:
+    build:
+      context: .
+      dockerfile: ./apps/employer-dashboard/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/v1}
+        NEXT_PUBLIC_ASSESSMENT_ENGINE_URL: ${NEXT_PUBLIC_ASSESSMENT_ENGINE_URL:-http://localhost:4002}
+    container_name: zetheta-employer-dashboard
+    ports:
+      - "${EMPLOYER_DASHBOARD_PORT:-4003}:4003"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://api-gateway:3001/v1
+    depends_on:
+      - api-gateway
 
 volumes:
   postgres_data:

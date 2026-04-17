@@ -10,8 +10,11 @@
     "graph": "turbo run build --graph=build-graph.html",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed",
-    "prisma:verify-indexes": "tsx prisma/verify-indexes.ts"
+    "prisma:seed": "pnpm tsx prisma/seed.ts",
+    "prisma:verify-indexes": "tsx prisma/verify-indexes.ts",
+    "db:migrate": "set DATABASE_URL=postgresql://zetheta:zetheta@localhost:5432/zetheta&& pnpm prisma:migrate",
+    "db:seed": "set DATABASE_URL=postgresql://zetheta:zetheta@localhost:5432/zetheta&& pnpm prisma:seed",
+    "db:init": "pnpm db:migrate && pnpm db:seed"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

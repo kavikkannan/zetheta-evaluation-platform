@@ -6,7 +6,7 @@ export interface WSMessage {
   payload: any;
 }
 
-export function useWebSocket(onMessage?: (msg: WSMessage) => void) {
+export function useWebSocket(onMessage?: (msg: WSMessage) => void, token?: string) {
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>(null);
@@ -19,10 +19,11 @@ export function useWebSocket(onMessage?: (msg: WSMessage) => void) {
     let cancelled = false;
 
     function connect() {
-      if (cancelled) return;
+      if (cancelled || !token) return;
       if (socketRef.current?.readyState === WebSocket.OPEN) return;
 
-      const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL);
+      const socketUrl = token ? `${env.NEXT_PUBLIC_WEBSOCKET_URL}?token=${token}` : env.NEXT_PUBLIC_WEBSOCKET_URL;
+      const socket = new WebSocket(socketUrl);
       socketRef.current = socket;
 
       socket.onopen = () => {
@@ -67,7 +68,7 @@ export function useWebSocket(onMessage?: (msg: WSMessage) => void) {
         socketRef.current.close();
       }
     };
-  }, []); // Empty deps — connect once, stay connected
+  }, [token]); // Reconnect if the token changes
 
   return { isConnected };
 }

@@ -6,7 +6,7 @@ const configSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   JWT_PUBLIC_KEY_PATH: z.string().min(1),
   JWT_ISSUER: z.string().min(1),
-  JWT_AUDIENCE: z.string().min(1),
+  JWT_AUDIENCE: z.string().default("auth-service"),
 });
 
 export type Config = z.infer<typeof configSchema>;

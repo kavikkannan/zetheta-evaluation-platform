@@ -21,6 +21,8 @@ ENV NODE_ENV=production
 
 # Copy the pnpm-deploy output (symlinks preserved)
 COPY --from=builder /app/out ./
+COPY prisma ./prisma
+RUN npm install -g pnpm prisma
 
 EXPOSE 3001
 ENV PORT=3001

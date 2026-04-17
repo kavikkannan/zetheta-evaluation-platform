@@ -33,7 +33,7 @@ interface Candidate {
 interface QuestionResult {
   sequence: number;
   questionText: string;
-  options: Record<string, string>;
+  options: Array<{ label: string; text: string }>;
   candidateAnswer: string;
   correctAnswer: string;
   isCorrect: boolean;
@@ -75,7 +75,8 @@ export function Dashboard({ initialCandidates }: DashboardProps) {
     }
   }, []);
 
-  useWebSocket(handleWSMessage);
+  const eToken = Cookies.get("e_session");
+  useWebSocket(handleWSMessage, eToken);
 
   const handleLogout = () => {
     Cookies.remove("e_session");
@@ -85,7 +86,7 @@ export function Dashboard({ initialCandidates }: DashboardProps) {
   const fetchResults = async (candidateId: string) => {
     setLoadingResults(candidateId);
     try {
-      const resp = await fetch(`http://localhost:3001/v1/dashboard/candidates/${candidateId}/results`, {
+      const resp = await fetch(`http://127.0.0.1:3001/v1/dashboard/candidates/${candidateId}/results`, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('e_session')}`
         }
@@ -348,7 +349,7 @@ export function Dashboard({ initialCandidates }: DashboardProps) {
                       </div>
                       
                       <div className="grid grid-cols-1 gap-3 ml-12">
-                        {(q.options as any[]).map((opt) => {
+                        {(q.options || []).map((opt) => {
                           const isChosen = q.candidateAnswer === opt.label;
                           const isCorrect = q.correctAnswer === opt.label;
                           
